@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>注册</title>
+		<script src="js/react.min.js"></script>
+		<script src="js/react-dom.min.js"></script>
+		<script src="js/browser.min.js"></script>
+		<script src="js/ajax.js"></script>
+		<style type="text/css">
+			#register{
+				width: 100%;
+				background-color: #168AD1;
+				text-align: center;
+				color: #fff;
+			}
+			#regist_contact{
+				width: 600px;
+				height: 500px;
+				padding-top: 50px;
+				margin-left:800px;
+			}
+			h1{
+				padding: 30px 0 20px;
+			}
+			.subBtn{
+				border: none;
+				width: 50px;
+				height: 30px;
+				background-color: #FFF;
+				cursor: pointer;
+			}
+			.formClass{
+				width: 500px;
+				text-align: right;
+				margin: 20px 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="register"></div>
+		<script type="text/babel">
+			var RegistElement = React.createClass({
+				getInitialState:function(){
+					return {
+						userName:{},
+						pwd:{},
+						confirmP:{},
+						email:{}
+					}
+				},
+				validateUserName:function(e){
+					if(/^\w{6,20}$/.test(e.target.value)){
+						ajax({
+							type:"get",
+							url:"/stuMsg/find",
+							data:{
+								username:e.target.value
+							},
+							success:(data)=>{
+								if(data.length > 0){
+									this.setState({
+										userName:{
+											info:"重名",
+											style:{
+												color:"red"
+											},
+											isTure:false
+										}
+									});
+								}else{
+									this.setState({
+										userName:{
+											info:"✅",
+											style:{
+												color:"green"
+											},
+											isTure:true
+										}
+									});
+								}
+							}
+						});
+					}else{
+						this.setState({
+							userName:{
+								info:"输入有误",
+								style:{
+									color:"red"
+								},
+								isTure:false
+							}
+						});
+					}
+				},
+				validatePwd:function(e){
+					console.log(e.target.value);
+					if(/^.{6,20}$/.test(e.target.value)){
+						this.setState({
+							pwd:{
+								info:"✅",
+								style:{
+									color:"green"
+								},
+								isTure:true
+							}
+						});
+					}else{
+						this.setState({
+							pwd:{
+								info:"输入有误",
+								style:{
+									color:"red"
+								},
+								isTure:false
+							}
+						});
+					}
+				},
+				confirmPwd:function(e){
+					var pwdVal = this.refs.pwd.refs.input.value;
+					var confirmVal = e.target.value;
+					if(confirmVal == pwdVal){
+						this.setState({
+							confirmP:{
+								info:"✅",
+								style:{
+									color:"green"
+								},
+								isTure:true
+							}
+						});
+					}else{
+						this.setState({
+							confirmP:{
+								info:"密码不一致",
+								style:{
+									color:"red"
+								},
+								isTure:false
+							}
+						});
+					}
+				},
+				validateEmail:function(e){
+					if(/^[a-z0-9A-Z]{3}@[a-z0-9A-Z]{3}\.[a-z0-9A-Z]{3}$/.test(e.target.value)){
+						this.setState({
+							email:{
+								info:"✅",
+								style:{
+									color:"green"
+								},
+								isTure:true
+							}
+						});
+					}else{
+						this.setState({
+							email:{
+								info:"输入有误",
+								style:{
+									color:"red"
+								},
+								isTure:false
+							}
+						});
+					}
+				},
+				reg:function(){
+					if(this.state.userName.isTure && this.state.pwd.isTure && this.state.confirmP.isTure && this.state.email.isTure){
+						ajax({
+							type:"get",
+							url:"/stuMsg/add",
+							data:{
+								username:this.refs.user.refs.input.value,
+								pwd:this.refs.pwd.refs.input.value,
+								email:this.refs.email.refs.input.value
+							},
+							success:function(data){
+								location.href = "login_react.html";
+							}
+						});
+					}else{
+						alert("错误");
+					}
+				},
+				render:function(){
+					return <div id="regist_contact">
+						<h1>免费注册</h1>
+						<InputElement type="text" validate={this.validateUserName} 
+						info={this.state.userName.info} style={this.state.userName.style} ref="user">用户名:</InputElement>
+						<InputElement type="password" validate={this.validatePwd}
+						 info={this.state.pwd.info} style={this.state.pwd.style} ref="pwd">密码:</InputElement>
+						<InputElement type="password" validate={this.confirmPwd} 
+						info={this.state.confirmP.info} style={this.state.confirmP.style}>确认密码:</InputElement>
+						<InputElement type="email" validate={this.validateEmail} style={this.state.email.style} info={this.state.email.info} ref="email">e-mail:</InputElement>
+						<input className="subBtn" style={{textAlign:"center"}} onClick={this.reg} value="确认"  />
+					</div>
+				}
+			});
+			var InputElement = React.createClass({
+				style:{
+					width:300,
+					height:30,
+					border:"2px solid"
+				},
+				render:function(){
+					return <div className="formClass">
+						<label>{this.props.children}</label>	
+						<input style={this.style} type={this.props.type} ref="input" onBlur={this.props.validate}/>
+						<span style={this.props.style} ref="info">{this.props.info}</span>
+					</div>
+				}
+			});
+			
+			ReactDOM.render(<RegistElement></RegistElement>,document.getElementById("register"));
+		</script>
+	</body>
+</html>

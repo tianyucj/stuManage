@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>学生管理界面</title>
+		<script src="js/react.min.js"></script>
+		<script src="js/react-dom.min.js"></script>
+		<script src="js/browser.min.js"></script>
+		<script src="js/ajax.js"></script>
+		<link rel="stylesheet" href="style/reset.css" />
+		<link rel="stylesheet" href="style/manager.css" />
+	</head>
+
+	<body>
+		<div id="stuManage"></div>
+
+		<script type="text/babel">
+
+			var HeaderElement = React.createClass({ render:function(){ 
+				return <header>
+					<h1>学生信息管理</h1>
+				</header>
+			} });
+			var TabElement = React.createClass({ 
+				style:{ 
+					border:"1px solid" 
+				}, 
+				render:function(){ 
+					var theaderTxt = ["学号","班级","姓名","性别","年龄","成绩","备注","操作"]; 
+					var theader = theaderTxt.map(function(ele){ 
+						return <th style={{border: "1px solid"}}>{ele}</th>
+					}); 
+					var arr = this.props.stuData.map(function(ele){
+						return <StuTrElement show={this.props.show} sendUpdateData={this.props.sendUpdateData} msg={ele}></StuTrElement>
+					}.bind(this));
+					return <table border="1">
+							<thead>
+								<tr>
+									{theader}
+								</tr>
+							</thead>
+							<tbody>
+								{arr}
+							</tbody>
+						</table>
+			} }); 
+			var StuTrElement = React.createClass({
+				style:{
+					 width:40,height:30,border:"1px solid"
+				},
+				dleData:function(){
+					ajax({
+						type:"post",
+						url:"/studentsManage/del",
+						data:{
+							_id:this.props.msg._id
+						},
+						success:function(){
+							this.props.show();
+						}.bind(this)
+					});
+				},
+				//调用父级传递过来的sendUpdateData方法，将获取到的当前点击行数据传递给最大的父级，最后再传递给显示将修改数据的组建上
+				updateData:function(){
+					this.props.sendUpdateData(this.props.msg);
+				},
+				render:function(){
+					return <tr>
+							<td>{this.props.msg.number}</td>
+							<td>{this.props.msg.class}</td>
+							<td>{this.props.msg.name}</td>
+							<td>{this.props.msg.sex}</td>
+							<td>{this.props.msg.age}</td>
+							<td>{this.props.msg.score}</td>
+							<td>{this.props.msg.remark}</td>
+							<td><input type="button" value="查看" style={this.style} />
+							<input type="button" onClick={this.updateData} value="修改" style={this.style} />
+							<input type="button" value="删除" onClick={this.dleData} style={this.style} />
+							</td>
+						</tr>
+				}
+			});
+			var RedioElement = React.createClass({
+				getInitialState:function(){
+					return {}
+				},
+				//为了解决当给input框设置value值后，react会将当前组建设为受控组建的问题，采取修改state的方式
+				//加入componentWillReceiveProps生命周期，在这个生命周期中去改变state的值（因为这个生命周期在props改变时才会触发执行，在这个内部来修改state的值不会进入死循环）
+				componentWillReceiveProps:function(newProps){
+					console.log("newProps",newProps);
+					this.setState({
+						value:newProps.value
+					});
+				},
+				//当input框的值改变时，给state的changeValue属性设置默认值
+				changeData:function(e){
+					this.setState({
+						value:e.target.value
+					});
+				},
+				//checked={this.props.value=="男"}判断传入的value值，如果为对应判断的值则结果为true，即选中单选按钮
+				render:function(){
+					return <div style={{float:"left",width:200,height:30,marginLeft:20}}>
+						<label>性别:</label>
+						<input  type="radio" ref="male" value="男" onChange={this.changeData} checked={this.state.value=="男"} name="gender"/><label>男</label>
+						<input  type="radio" ref="female" value="女" onChange={this.changeData} checked={this.state.value=="女"} name="gender"/><label>女</label>
+					</div>
+				}
+			});
+			var RedioEditeElement = React.createClass({
+				render:function(){
+					return <div style={{float:"left",width:200,height:30,marginLeft:20}}>
+						<label>性别:</label>
+						<input  type="radio" ref="_male" value="男" name="edite_gender"/><label>男</label>
+						<input  type="radio" ref="_female" value="女" name="edite_gender"/><label>女</label>
+					</div>
+				}
+			});
+			var OpreateElement = React.createClass({ 
+				style:{
+					width:100,
+					height:20,
+					border:"1px solid"
+				},
+				getInitialState:function(){
+					console.log(this.props);
+					return {
+						changeValue:this.props.value
+					}
+				},
+				//为了解决当给input框设置value值后，react会将当前组建设为受控组建的问题，采取修改state的方式
+				//加入componentWillReceiveProps生命周期，在这个生命周期中去改变state的值（因为这个生命周期在props改变时才会触发执行，在这个内部来修改state的值不会进入死循环）
+				componentWillReceiveProps:function(newProps){
+					console.log(newProps.value);
+					this.setState({
+						changeValue:newProps.value
+					});
+				},
+				//当input框的值改变时，给state的changeValue属性设置默认值
+				changeData:function(e){
+					console.log(e.target.value);
+					this.setState({
+						changeValue:e.target.value
+					});
+				},
+				render:function(){ 
+					return <div style={{display:"inline-block"}}><label>{this.props.children}</label>
+						<input type={this.props.type} onChange={this.changeData} style={this.style} value={this.state.changeValue} ref="input" />
+					</div>
+			} }); 
+			var AddStudents = React.createClass({ 
+				style:{ 
+					width:500,height: 500, border:"1px solid",display:"inline-block"
+				},
+				addData:function(){
+					var num = this.refs.num.refs.input.value;
+					var _class = this.refs._class.refs.input.value;
+					var name = this.refs.name.refs.input.value;
+					var age = this.refs.age.refs.input.value;
+					var score = this.refs.score.refs.input.value;
+					var remark = this.refs.remark.refs.input.value;
+					var gender;
+					
+					if(this.refs.gender.refs._male.checked){
+						gender = "男";
+					}else if(this.refs.gender.refs._female.checked){
+						gender = "女";
+					}
+					ajax({
+						type:"post",
+						url:"/studentsManage/add",
+						data:{
+							number:num,
+							class:_class,
+							name:name,
+							sex:gender,
+							age:age,
+							score:score,
+							remark:remark
+						},
+						success:function(){
+							this.props.show();
+						}.bind(this)
+					});
+				},
+				render:function(){ 
+					return <div style={this.style}>
+						<h2 style={{textAlign:"center"}}>增加</h2>
+						<OpreateElement type="text" ref="num">学号:</OpreateElement>
+						<OpreateElement type="text" ref="_class">班级:</OpreateElement>
+						<OpreateElement type="text" ref="name">姓名:</OpreateElement>
+						<RedioEditeElement ref="gender"></RedioEditeElement>
+						<OpreateElement type="text" ref="age">年龄:</OpreateElement>
+						<OpreateElement type="text" ref="score">成绩:</OpreateElement>
+						<OpreateElement type="text" ref="remark">备注:</OpreateElement>
+						<div style={{textAlign:"center"}}><input type="button" value="增加"
+						 onClick={this.addData} style={{width:40,height:30,border:"1px solid"}}/></div>
+					</div> 
+			} });
+			var SearchStudents = React.createClass({
+				style:{
+					width:300,
+					height:30,
+					border:"1px solid"				
+				},
+				serchData:function(){
+					var selectVal = this.refs.sele.value;
+					var serchInput = this.refs.serchInput.value;
+					if(selectVal == "学号"){
+						selectVal = "number";
+					}else if(selectVal == "班级"){
+						selectVal = "class";
+					}else if(selectVal == "姓名"){
+						selectVal = "name";
+					}else if(selectVal == "年龄"){
+						selectVal = "age";
+					}else if(selectVal == "成绩"){
+						selectVal = "score";
+					}else if(selectVal == "性别"){
+						selectVal = "sex";
+					}
+					//不支持对象字面量的形式
+					var sendData = {	};
+					sendData[selectVal] = serchInput;
+					this.props.show(sendData);
+				},
+				render:function(){
+					var optionsArr = ["学号","班级","姓名","年龄","成绩","性别"];
+					var options = optionsArr.map(function(ele){
+						return <option>{ele}</option>
+					});
+					return <div style={{display:"inline-block"}}>
+						<select ref="sele">{options}</select>
+						<input style={this.style} ref="serchInput" type="text" placeholder="请输入查询条件" />
+						<input type="button" onClick={this.serchData} value="查询" style={{width:40,height:30,border:"1px solid"}} />
+					</div>
+				}
+			});
+			var EditeStudents = React.createClass({ 
+				style:{ 
+					width:500,
+					height: 500,
+					border:"1px solid",
+					display:"inline-block"
+				}, 
+				editeData:function(){
+					var _number = this.refs._number.refs.input.value;
+					var _class = this.refs._class.refs.input.value;
+					var name = this.refs.name.refs.input.value;
+					var gender;
+					var age = this.refs.age.refs.input.value;
+					var score = this.refs.score.refs.input.value;
+					var remark = this.refs.remark.refs.input.value;
+					console.log("this.refs.gender.refs",this.refs.gender.refs.male.checked,this.refs.gender.refs.female.checked);
+					if(this.refs.gender.refs.male.checked){
+						gender = "男";
+					}else if(this.refs.gender.refs.female.checked){
+						gender = "女";
+					}
+					console.log(_number);
+					ajax({
+						type:"post",
+						url:"/studentsManage/update",
+						data:{
+							_id:this.props.updateData._id,
+							number:_number,
+							class:_class,
+							name:name,
+							sex:gender,
+							age:age,
+							score:score,
+							remark:remark
+						},
+						success:function(){
+							this.props.show();
+						}.bind(this)
+					});
+				},
+				render:function(){ 
+					return <div style={this.style}>
+						<h2 style={{textAlign:"center"}}>修改</h2>
+						<OpreateElement ref="_number" type="text" value={this.props.updateData.number}>学号:</OpreateElement>
+						<OpreateElement ref="_class" type="text" value={this.props.updateData.class}>班级:</OpreateElement>
+						<OpreateElement ref="name" type="text" value={this.props.updateData.name}>姓名:</OpreateElement>
+						<RedioElement ref="gender" value={this.props.updateData.sex}></RedioElement>
+						<OpreateElement ref="age" type="text" value={this.props.updateData.age}>年龄:</OpreateElement>
+						<OpreateElement ref="score" type="text" value={this.props.updateData.score}>成绩:</OpreateElement>
+						<OpreateElement ref="remark" type="text" value={this.props.updateData.remark}>备注:</OpreateElement>
+						<div style={{textAlign:"center"}}><input type="button" onClick={this.editeData} value="修改" style={{width:40,height:30,border:"1px solid"}}/></div>
+					</div> 
+			} });
+			var PageStudent = React.createClass({
+				style:{
+					height:30,
+					border:"1px solid"
+				},
+				render:function(){
+					return <div style={{textAlign:"center",marginTop:30}}>
+						<input style={this.style} type="button" value="上一页" />
+						<input style={this.style} type="text" />
+						<input type="button" style={this.style} value="下一页" />
+					</div>
+				}
+			});
+			var FooterElement = React.createClass({ 
+				render:function(){ 
+					return <footer>
+						欢迎访问F36学生管理系统
+					</footer>
+			} });
+			var ManagerElement = React.createClass({ 
+				getInitialState:function(){
+					return {
+						stuData:[],
+						updateData:{}
+					}
+				},
+				getData:function(sdata){
+					console.log(sdata);
+					ajax({
+						type:"post",
+						url:"/studentsManage/find",
+						data:sdata,
+						success:(data)=>{
+							console.log(data);
+							this.setState({
+								stuData:data
+							});
+						}
+					});
+				},
+				componentWillMount:function(){
+					this.getData();
+				},
+				sendUpdateData:function(updateMsg){
+					this.setState({
+						updateData:updateMsg
+					});
+				},
+				render:function(){ 
+					return <div>
+						<HeaderElement></HeaderElement>	
+						<TabElement sendUpdateData={this.sendUpdateData} show={this.getData} stuData={this.state.stuData}></TabElement>
+						<PageStudent></PageStudent>
+						<div id="opreateArea">
+							<AddStudents show={this.getData}></AddStudents>
+							<EditeStudents updateData={this.state.updateData} show={this.getData}></EditeStudents>
+							<SearchStudents show={this.getData}></SearchStudents>
+						</div>
+						<FooterElement></FooterElement>
+					</div>
+			} }); 
+			ReactDOM.render(<ManagerElement></ManagerElement>,document.getElementById("stuManage"));
+		</script>
+	</body>
+
+</html>

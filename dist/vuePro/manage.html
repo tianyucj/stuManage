@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>管理页面</title>
+</head>
+<body>
+	<div><h1>管理页面</h1></div>
+	<div id="manage">
+		<Student></Student>
+	</div>
+
+	<script type="text/javascript" src="js/vue.js"></script>
+	<script type="text/javascript" src="js/tools.js"></script>
+	<script type="text/javascript">
+
+		var InputElement = {
+			template:"<div>\
+				<label><slot></slot></label>\
+				<input @input='checkFormValue' :value='value' />\
+			</div>",
+			props:["value"],
+			methods:{
+				checkFormValue:function(e){
+					console.log(e.target.value);
+					this.$emit("input",e.target.value);
+				}
+			}
+		}
+		var GenderRadio = {
+			template:"<div>\
+				<label>性别：</label>\
+				<input type='radio' value='女' name='gender' :checked=\"value == '女'\" @change='checkedGender' /><label>女</label>\
+				<input type='radio' value='男' name='gender' :checked=\"value == '男'\" @change='checkedGender' /><label>男</label>\
+			</div>",
+			props:["value"],
+			methods:{
+				checkedGender:function(e){
+					console.log(e.target.value);
+					this.$emit("input",e.target.value);
+				}
+			}
+		}
+		var UpdateElement = {
+			template:"<div>\
+				<h2>修改</h2>\
+				<InputElement v-model='nowRowData.name' >姓名：</InputElement>\
+				<InputElement v-model='nowRowData.age' >年龄：</InputElement>\
+				<GenderRadio v-model='nowRowData.sex' ></GenderRadio>\
+				<input type='button' @click='updateData' value='修改'/>\
+			</div>",
+			props:["nowRowData","show"],
+			components:{
+				InputElement,
+				GenderRadio
+			},
+			methods:{
+				updateData:function(){
+					console.log("name"+this.nowRowData.name);
+					ajax({
+						type:"post",
+						url:"/stuData/update",
+						data:{
+							_id:this.nowRowData._id,
+							name:this.nowRowData.name,
+							age:this.nowRowData.age,
+							sex:this.nowRowData.sex
+						},
+						success:function(data){
+							console.log(data);
+							this.show();
+						}.bind(this)
+					});
+				}
+			}
+		}
+		var AddElement = {
+			template:"<div>\
+				<h2>增加</h2>\
+				<InputElement v-model='name.value'>姓名：</InputElement>\
+				<InputElement v-model='age.value'>年龄：</InputElement>\
+				<GenderRadio v-model='sex.value'></GenderRadio>\
+				<input type='button' @click='addData' value='增加'/>\
+			</div>",
+			components:{
+				InputElement,
+				GenderRadio
+			},
+			props:["show"],
+			data:function(){
+				return {
+					name:{
+						value:''
+					},
+					age:{
+						value:''
+					},
+					sex:{
+						value:''
+					}
+				}
+			},
+			methods:{
+				addData:function(){
+					ajax({
+						type:"post",
+						url:"../stuData/add",
+						data:{name:this.name.value,age:this.age.value,sex:this.sex.value},
+						success:function(){
+							this.show();
+						}.bind(this)
+					});
+				}
+			}
+		}
+
+		var SearchElement = {
+			template:"<div>\
+				<h2>查询</h2>\
+				<InputElement v-model='name.value'>姓名：</InputElement>\
+				<InputElement v-model='age.value'>年龄：</InputElement>\
+				<GenderRadio v-model='sex.value'></GenderRadio>\
+				<input type='button' @click='searchData' value='查询'/>\
+				<input type='button' @click='clearSearch' value='清空'/>\
+			</div>",
+			props:["searchStu","data"],
+			components:{
+				InputElement,
+				GenderRadio
+			},
+			data:function(){
+				return {
+					name:{
+						value:''
+					},
+					age:{
+						value:''
+					},
+					sex:{
+						value:''
+					}
+				}
+			},
+			methods:{
+				searchData:function(){
+					var obj = {
+						name:this.name.value,
+						age:this.age.value,
+						sex:this.sex.value
+					}
+					this.searchStu(1,obj);
+
+				},
+				clearSearch:function(){
+					this.name.value = "";
+					this.age.value = "";
+					this.sex.value = "";
+				}
+			}
+
+		}
+		var TrElement = {
+			template:"<tr>\
+						<td>{{bodyData.name}}</td>\
+						<td>{{bodyData.age}}</td>\
+						<td>{{bodyData.sex}}</td>\
+						<td><input type='button' @click='rowData(bodyData._id)' value='修改'/><input type='button' @click='deleteData(bodyData._id)' value='删除'/></td>\
+					</tr>",
+			props:["bodyData","updateNowRow","show"],
+			methods:{
+				rowData:function(id){
+					ajax({
+						type:"post",
+						url:"../stuData/find",
+						data:{_id:id},
+						success:function(data){
+							this.updateNowRow(data);
+							console.log(data);
+						}.bind(this)
+					});
+				},
+				deleteData:function(id){
+					ajax({
+						type:"post",
+						url:"../stuData/del",
+						data:{_id:id},
+						success:function(data){
+							this.show();
+						}.bind(this)
+					});
+				}
+			}
+		}
+		var Tabelement = {
+			template:"<table border='1'>\
+				<thead>\
+					<tr>\
+						<th v-for='headData in tabhead'>{{headData}}</th>\
+					</tr>\
+				</thead>\
+				<tbody>\
+					<TrElement :show='show' :updateNowRow='updateNowRow' v-for='bodyData in data.rows' :bodyData='bodyData'></TrElement>\
+				</tbody>\
+			</table>",
+			props:["data","updateNowRow","show"],
+			components:{
+				TrElement
+			},
+			data:function(){
+				return {
+					tabhead:["姓名","年龄","性别","操作"]
+				}
+			}
+		}
+		var Page = {
+			template:"<div>\
+				<input type='button' value='上一页' @click='upPage(data.curpage)' />\
+				<label>{{data.curpage}}/{{data.maxpage}}</label>\
+				<input type='button' @click='nextPage(data.curpage)' value='下一页' />\
+			</div>",
+			props:["data","show","search"],
+			methods:{
+				upPage:function(page){
+					if (page > 1) {
+						page--;
+						if(this.search.name != undefined || this.search.age != undefined || this.search.sex != undefined){
+							this.show(page,this.search);
+						}else{
+							this.show(page);
+						}
+					}
+				},
+				nextPage:function(page){
+					if (page < this.data.maxpage) {
+						page++;
+						if(this.search.name != undefined || this.search.age != undefined || this.search.sex != undefined){
+							this.show(page,this.search);
+						}else{
+							this.show(page);
+						}
+					}
+				}
+			}
+		}
+		var Student = {
+			template:"<div>\
+				<UpdateElement :show='show' :nowRowData='nowRowData'></UpdateElement>\
+				<AddElement :show='show'></AddElement>\
+				<SearchElement :data='data' :searchStu='show'></SearchElement>\
+				<Tabelement :updateNowRow='updateNowRow' :show='show' :data='data'></Tabelement>\
+				<Page :data='data' :search='search' :show='show'></Page>\
+			</div>",
+			created:function(){
+				this.show();
+			},
+			data:function(){
+				return {
+					data:{},
+					nowRowData:{},
+					search:{}
+				}
+			},
+			components:{
+				UpdateElement,
+				AddElement,
+				Tabelement,
+				SearchElement,
+				Page
+			},
+			methods:{
+				show:function(page,searchDa){
+					var obj = {};
+					if(searchDa != undefined){
+						obj = {
+							page:page,
+							rows:4,
+							name:searchDa.name,
+							age:searchDa.age,
+							sex:searchDa.sex
+						}
+						this.search = obj;
+					}else{
+						obj = {
+							page:page,
+							rows:4
+						}
+					}
+
+					console.log("searchDa",searchDa);
+					ajax({
+						type:"post",
+						url:"../stuData/find",
+						data:obj,
+						success:function(data){
+							console.log(data);
+							this.data = data;
+						}.bind(this)
+					});
+				},
+				updateNowRow:function(data){
+					this.nowRowData = data;
+				},
+				searchStu:function(data){
+					this.data.rows=data;
+				}
+			}
+		}
+
+		var Manage = new Vue({
+			el:"#manage",
+			components:{
+				Student
+			}
+		});
+
+	</script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>注册</title>
+</head>
+<body>
+	<div id="reg">	
+		<Registe></Registe>
+	</div>
+
+	<script src="js/vue.js"></script>
+	<script type="text/javascript" src="js/tools.js"></script>
+	<script type="text/javascript">
+		var InputElement = {
+			template:"<div>\
+				<label><slot></slot></label>\
+				<input :type='type' :value='value' @input='checkFormValue'/>\
+				<span>{{info}}</span>\
+			</div>",
+			props:["info","value","type"],
+			methods:{
+				checkFormValue:function(e){
+					this.$emit("input",e.target.value);
+				}
+			}
+		}
+
+		var Registe = {
+			template:"<div>\
+				<h1>免费注册</h1>\
+				<form>\
+					<InputElement :type='username.type' :info='username.info' v-model='username.value' >用户名：</InputElement>\
+					<InputElement :type='pwd.type' :info='pwd.info' v-model='pwd.value'>密码：</InputElement>\
+					<InputElement :type='confirmpwd.type' :info='confirmpwd.info' v-model='confirmpwd.value'>确认密码：</InputElement>\
+					<InputElement :type='email.type' :info='email.info' v-model='email.value'>E-mail：</InputElement>\
+					<input type=\"button\" @click='checkReg' value=\"确认\" />\
+				</form>\
+			</div>",
+			components:{
+				InputElement:InputElement
+			},
+			data:function(){
+				return {
+					username:{
+						info:'',
+						value:'',
+						type:'text',
+						isTrue:false
+					},
+					pwd:{
+						info:'',
+						value:'',
+						type:'password',
+						isTrue:false
+					},
+					confirmpwd:{
+						info:'',
+						value:'',
+						type:'password',
+						isTrue:false
+					},
+					email:{
+						info:'',
+						value:'',
+						type:'e-mail',
+						isTrue:false
+					}
+				}
+			},
+			watch:{
+				"username.value":function(value){
+					if(/^\w{6,20}$/.test(value)){
+						ajax({
+							type:"post",
+							url:"../stuMsg/find",
+							data:{username:value},
+							success:function(data){
+								if(data.length > 0){
+									this.username.info = "重名";
+									this.username.isTrue = false;
+								}else{
+									this.username.info = "✅";
+									this.username.isTrue = true;
+								}
+							}.bind(this)
+						});
+					}else{
+						this.username.info = "❌";
+						this.username.isTrue = false;
+					}
+				},
+				"pwd.value":function(value){
+					if(/^.{6,20}$/.test(value)){
+						this.pwd.info = "✅";
+						this.pwd.isTrue = true;
+					}else{
+						this.pwd.info = "❌";
+						this.pwd.isTrue = false;
+					}
+				},
+				"confirmpwd.value":function(value){
+					if(value == this.pwd.value){
+						this.confirmpwd.info = "✅";
+						this.confirmpwd.isTrue = true;
+					}else{
+						this.confirmpwd.info = "❌";
+						this.confirmpwd.isTrue = false;
+					}
+				},
+				"email.value":function(value){
+					if(/^[a-zA-Z0-9]{3,6}@[a-zA-Z0-9]{3,6}\.[a-zA-Z]{3,6}$/.test(value)){
+						this.email.info = "✅";
+						this.email.isTrue = true;
+					}else{
+						this.email.info = "❌";
+						this.email.isTrue = false;
+					}
+				}
+			},
+			methods:{
+				checkReg:function(){
+					if (this.username.isTrue && this.pwd.isTrue && this.confirmpwd.isTrue && this.email.isTrue ) {
+						ajax({
+							type:"post",
+							url:"../stuMsg/add",
+							data:{username:this.username.value,pwd:this.pwd.value,email:this.email.value},
+							success:function(data){
+								location.href = "manage.html";
+							}
+						});
+					}
+					
+				}
+			}
+		}
+		var Reg = new Vue({
+			el:"#reg",
+			components:{
+				Registe:Registe
+			}
+		});
+
+
+	</script>
+
+</body>
+</html>
